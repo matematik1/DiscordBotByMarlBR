@@ -102,9 +102,26 @@ SOUND_SUBCOMMANDS = {
     "help": "Displays this menu"
 }
 
-ADM_SUBCOMMANDS = {
-    "restart": "Restarting the bot",
-    "close": "Closing the bot",
-    "clear": "Clearing chat messages",
-    "help": "Displays this menu"
+CENSORED_WORDS = [
+    "натурал",
+    "natural",
+    "67",
+    "нітуріл",
+    "скитер",
+    "скітер",
+    "skiter",
+    "sketer",
+    "skeeter"
+]
+
+DOTA_RANK_ID = {
+    0: 1553011169218793562,
+    1: 1543692031308865656,
+    2: 1543692447559721030,
+    3: 1543692647888326656,
+    4: 1543692782126764072,
+    5: 1553013451100786758,
+    6: 1553011430377398382,
+    7: 1553012012231950366,
+    8: 1553012142087868547
 }

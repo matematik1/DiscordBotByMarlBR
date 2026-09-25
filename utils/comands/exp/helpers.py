@@ -25,3 +25,11 @@ def check_level_up(xp: int, current_lvl: int) -> tuple[int, int, bool]:
 
     did_level_change = user_lvl != initial_lvl
     return user_xp, user_lvl, did_level_change
+
+def create_progress_bar(current: int, total: int, length: int = 10) -> str:
+    """Генерує текстовий прогрес-бар (наприклад: ▰▰▰▰▱▱▱▱▱▱)."""
+    if total <= 0:
+        return "▱" * length
+    ratio = min(max(current / total, 0.0), 1.0)
+    filled_len = int(round(length * ratio))
+    return "▰" * filled_len + "▱" * (length - filled_len)

@@ -1,8 +1,7 @@
 import random
-import asyncio
 import disnake
 
-# GIF посилання для анімацій
+# --- ПУЛИ GIF-АНІМАЦІЙ ---
 GIFS_DUEL_START = [
     "https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExOW5uZ3B0ZXlqMWF1ZHdwd2dyNmxhZGVlczZ2bnBybjA2dWNnN2ltZSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/fX8771PO1eATJz6r4R/giphy.gif"
 ]
@@ -16,16 +15,16 @@ GIFS_ROULETTE_SPIN = [
 ]
 
 GIFS_ROULETTE_CLICK = [
-    "https://i.gifer.com/U3wg.gif"
+    "https://i.gifer.com/OJMM.gif"
 ]
 
 GIFS_ROULETTE_BANG = [
-    "https://i.gifer.com/zMn.gif"
+    "https://i.gifer.com/JHu2.gif"
 ]
 
 
 class DuelInviteView(disnake.ui.View):
-    """Buttons for Player B to Accept or Decline the duel."""
+    """Панель підтвердження виклику на дуель для опонента."""
     def __init__(self, challenger: disnake.Member, opponent: disnake.Member):
         super().__init__(timeout=45.0)
         self.challenger = challenger
@@ -39,7 +38,7 @@ class DuelInviteView(disnake.ui.View):
     @disnake.ui.button(label="Accept Duel", style=disnake.ButtonStyle.success, emoji="⚔️")
     async def accept_btn(self, button: disnake.ui.Button, inter: disnake.MessageInteraction):
         if inter.author.id != self.opponent.id:
-            await inter.response.send_message("❌ This challenge was not issued to you!", ephemeral=True)
+            await inter.response.send_message("❌ This duel invitation is not for you!", ephemeral=True)
             return
 
         self.accepted = True
@@ -49,14 +48,14 @@ class DuelInviteView(disnake.ui.View):
     @disnake.ui.button(label="Decline", style=disnake.ButtonStyle.danger, emoji="🏳️")
     async def decline_btn(self, button: disnake.ui.Button, inter: disnake.MessageInteraction):
         if inter.author.id != self.opponent.id:
-            await inter.response.send_message("❌ This challenge was not issued to you!", ephemeral=True)
+            await inter.response.send_message("❌ This duel invitation is not for you!", ephemeral=True)
             return
 
         self.accepted = False
         self.stop()
         embed = disnake.Embed(
             title="🏳️ Duel Declined",
-            description=f"{self.opponent.mention} turned down the duel challenge from {self.challenger.mention}.",
+            description=f"{self.opponent.mention} declined the challenge from {self.challenger.mention}.",
             color=disnake.Color.dark_gray()
         )
         for item in self.children:
@@ -65,7 +64,7 @@ class DuelInviteView(disnake.ui.View):
 
 
 class RussianRouletteView(disnake.ui.View):
-    """Step-by-step turn-based Russian Roulette cylinder."""
+    """Покроковий барабан російської рулетки з чергою пострілів."""
     def __init__(self, p1: disnake.Member, p2: disnake.Member):
         super().__init__(timeout=60.0)
         self.p1 = p1
@@ -78,7 +77,7 @@ class RussianRouletteView(disnake.ui.View):
     @disnake.ui.button(label="Pull Trigger", style=disnake.ButtonStyle.danger, emoji="🔫")
     async def trigger_btn(self, button: disnake.ui.Button, inter: disnake.MessageInteraction):
         if inter.author.id != self.turn.id:
-            await inter.response.send_message(f"⏳ It's not your turn! Waiting for {self.turn.display_name}.", ephemeral=True)
+            await inter.response.send_message(f"⏳ Wait for your turn! Now pulling: {self.turn.display_name}.", ephemeral=True)
             return
 
         is_bullet = self.cylinder[self.chamber_index] == 1
@@ -93,12 +92,11 @@ class RussianRouletteView(disnake.ui.View):
                 title="💥 *BANG!*",
                 description=(
                     f"**Chamber {self.chamber_index}/6 was loaded!**\n\n"
-                    f"💀 {loser.mention} pulled the trigger and collapsed.\n"
+                    f"💀 {loser.mention} pulled the trigger and lost.\n"
                     f"🏆 **Winner:** {winner.mention}"
                 ),
                 color=disnake.Color.dark_red()
             )
-            # Рандомна гіфка пострілу/поразки
             embed.set_image(url=random.choice(GIFS_ROULETTE_BANG))
             embed.set_footer(text="Game Over")
 
@@ -116,11 +114,10 @@ class RussianRouletteView(disnake.ui.View):
                 title="*Click...* 💨",
                 description=(
                     f"Chamber **{self.chamber_index}/6** was empty!\n"
-                    f"The cylinder advances... Now it's **{self.turn.mention}**'s turn to pull the trigger!"
+                    f"The cylinder rotates... Next turn: **{self.turn.mention}**!"
                 ),
                 color=disnake.Color.dark_gold()
             )
-            # Рандомна гіфка осічки
             embed.set_image(url=random.choice(GIFS_ROULETTE_CLICK))
             embed.set_footer(text=f"Turn: {self.turn.display_name}")
             await inter.response.edit_message(embed=embed, view=self)

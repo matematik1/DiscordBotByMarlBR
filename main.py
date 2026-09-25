@@ -15,6 +15,7 @@ bot = commands.Bot(
     case_insensitive=True
 )
 
+bot.default_sound_volume = 0.5
 bot.is_restarting = False
 
 @bot.event
@@ -111,19 +112,16 @@ async def help_command(ctx: commands.Context):
     await ctx.send(embed=embed)
 
 EXTENSIONS = [
-    "utils.comands.adm.adm_cog",
-    "utils.comands.dota.dota_cog",
-    "utils.comands.sound.sound_cog",
-    "utils.comands.play.play_cog",
-    "utils.comands.exp.exp_cog",
-    "utils.comands.duel.duel_cog"
+    "utils.comands.commands_cog",
+    "utils.event.event_cog",
+    "utils.slash_commands.slash_commands_cog"
 ]
 
 for ext in EXTENSIONS:
     bot.load_extension(ext)
 
 if __name__ == "__main__":
-    TOKEN_FILE = "FILE_WITH_YOUR_BOT_TOKEN"
+    TOKEN_FILE = "txt.jpg"
 
     if os.path.exists(TOKEN_FILE):
         with open(TOKEN_FILE, "r", encoding="utf-8") as f:

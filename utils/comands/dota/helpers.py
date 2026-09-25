@@ -1,11 +1,19 @@
 import os
 import io
+import urllib.parse
 import aiohttp
 import disnake
-from utils.storage import save_user_steam_id
-import urllib.parse
 from PIL import Image
-from utils.config import HEROES_GIF_DIR, HERO_NAME_OVERRIDES, ITEMS_B_DIR, ITEMS_I_DIR
+
+from utils.storage import save_user_steam_id
+from utils.config import (
+    HEROES_GIF_DIR,
+    HERO_NAME_OVERRIDES,
+    ITEMS_B_DIR,
+    ITEMS_I_DIR,
+    STEAM_API_KEY,
+    DOTA_RANK_ID
+)
 
 def get_available_heroes():
     if not os.path.exists(HEROES_GIF_DIR):
@@ -18,28 +26,17 @@ def get_available_heroes():
     for filename in os.listdir(HEROES_GIF_DIR):
         if filename.lower().endswith(".gif"):
             clean_name = filename[:-4]
-
             if clean_name.startswith(prefix_double):
                 clean_name = clean_name[len(prefix_double):]
             elif clean_name.startswith(prefix_single):
                 clean_name = clean_name[len(prefix_single):]
 
-            if clean_name in HERO_NAME_OVERRIDES:
-                display_name = HERO_NAME_OVERRIDES[clean_name]
-            else:
-                display_name = clean_name.replace("_", " ").title()
-
-            d2pt_slug = urllib.parse.quote(display_name)
-            clean_dotabuff = display_name.lower().replace("'", "").replace(" ", "-")
-
+            display_name = HERO_NAME_OVERRIDES.get(clean_name, clean_name.replace("_", " ").title())
             heroes.append({
                 "name": display_name,
-                "d2pt_slug": d2pt_slug,
-                "dotabuff_slug": clean_dotabuff,
                 "file_path": os.path.join(HEROES_GIF_DIR, filename),
                 "file_name": filename
             })
-
     return heroes
 
 def generate_inventory_image(boot_num: int, item_nums: list[int]) -> io.BytesIO:
@@ -48,7 +45,6 @@ def generate_inventory_image(boot_num: int, item_nums: list[int]) -> io.BytesIO:
         image_paths.append(os.path.join(ITEMS_I_DIR, f"{num}.png"))
 
     images = [Image.open(path).convert("RGBA") for path in image_paths]
-
     target_height = 80
     resized_images = []
     for img in images:
@@ -58,9 +54,7 @@ def generate_inventory_image(boot_num: int, item_nums: list[int]) -> io.BytesIO:
 
     padding = 10
     total_width = sum(img.size[0] for img in resized_images) + padding * (len(resized_images) - 1)
-    total_height = target_height
-
-    inventory_canvas = Image.new("RGBA", (total_width, total_height), (0, 0, 0, 0))
+    inventory_canvas = Image.new("RGBA", (total_width, target_height), (0, 0, 0, 0))
 
     current_x = 0
     for img in resized_images:
@@ -72,10 +66,54 @@ def generate_inventory_image(boot_num: int, item_nums: list[int]) -> io.BytesIO:
     buffer.seek(0)
     return buffer
 
-import aiohttp
-import disnake
-from utils.storage import save_user_steam_id
-from utils.config import STEAM_API_KEY
+TIER_MAP = {
+    1: "Herald", 2: "Guardian", 3: "Crusader", 4: "Archon",
+    5: "Legend", 6: "Ancient", 7: "Divine", 8: "Immortal"
+}
+
+def format_rank_tier(tier: int | None) -> str:
+    if not tier:
+        return "Uncalibrated"
+    if tier >= 80:
+        return "Immortal 🏆"
+    division = tier // 10
+    stars = tier % 10
+    name = TIER_MAP.get(division, "Unknown")
+    return f"{name} [{stars}★]"
+
+async def update_member_dota_role(member: disnake.Member, rank_tier: int | None) -> disnake.Role | None:
+    tier_index = 0 if not rank_tier else int(str(rank_tier)[0])
+    target_role_id = DOTA_RANK_ID.get(tier_index) or DOTA_RANK_ID.get(str(tier_index))
+    if not target_role_id:
+        return None
+
+    guild = member.guild
+    target_role = guild.get_role(int(target_role_id))
+    bot_member = guild.me
+
+    if not target_role or bot_member.top_role <= target_role:
+        return None
+    if guild.owner_id == member.id or bot_member.top_role <= member.top_role:
+        return None
+
+    all_rank_role_ids = {int(rid) for rid in DOTA_RANK_ID.values()}
+    roles_to_remove = [r for r in member.roles if r.id in all_rank_role_ids and r.id != target_role.id]
+
+    try:
+        if roles_to_remove:
+            await member.remove_roles(*roles_to_remove, reason="Dota 2 rank role update")
+        if target_role not in member.roles:
+            await member.add_roles(target_role, reason="Dota 2 rank verified role")
+        return target_role
+    except disnake.Forbidden:
+        return None
+
+class ProfileLinksView(disnake.ui.View):
+    def __init__(self, account_id: int):
+        super().__init__(timeout=None)
+        self.add_item(disnake.ui.Button(label="Dotabuff", url=f"https://www.dotabuff.com/players/{account_id}", style=disnake.ButtonStyle.link, emoji="📈"))
+        self.add_item(disnake.ui.Button(label="OpenDota", url=f"https://www.opendota.com/players/{account_id}", style=disnake.ButtonStyle.link, emoji="📊"))
+        self.add_item(disnake.ui.Button(label="Stratz", url=f"https://stratz.com/players/{account_id}", style=disnake.ButtonStyle.link, emoji="⚡"))
 
 class VerifySteamView(disnake.ui.View):
     def __init__(self, author_id: int, account_id: int, verify_code: str):
@@ -93,22 +131,16 @@ class VerifySteamView(disnake.ui.View):
         await inter.response.defer()
 
         steam_id_64 = self.account_id + 76561197960265728
-
-        url = (
-            f"https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/"
-            f"?key={STEAM_API_KEY}&steamids={steam_id_64}"
-        )
+        url = f"https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key={STEAM_API_KEY}&steamids={steam_id_64}"
 
         async with aiohttp.ClientSession() as session:
             try:
                 async with session.get(url, timeout=10) as resp:
                     if resp.status != 200:
-                        print(f"Error: Steam API returned status {resp.status}")
                         await inter.followup.send(f"❌ Steam API error (HTTP {resp.status}).", ephemeral=True)
                         return
                     data = await resp.json()
             except Exception as e:
-                print(f"Error connecting to Steam API: {e}")
                 await inter.followup.send("❌ Error connecting to Steam API. Try again later.", ephemeral=True)
                 return
 
@@ -129,13 +161,27 @@ class VerifySteamView(disnake.ui.View):
                 steam_name=steam_name
             )
 
+            rank_tier = None
+            try:
+                async with aiohttp.ClientSession() as od_session:
+                    async with od_session.get(f"https://api.opendota.com/api/players/{self.account_id}", timeout=5) as od_resp:
+                        if od_resp.status == 200:
+                            od_data = await od_resp.json()
+                            rank_tier = od_data.get("rank_tier")
+            except Exception:
+                pass
+
+            role = await update_member_dota_role(inter.author, rank_tier)
+
             for child in self.children:
                 child.disabled = True
             button.label = "Verified"
             await inter.edit_original_response(view=self)
 
+            role_msg = f"You have been assigned the role: **{role.name}**!\n" if role else ""
             await inter.followup.send(
                 f"🎉 **Success!** Account **{steam_name}** (`{self.account_id}`) has been linked to your Discord profile!\n"
+                f"{role_msg}"
                 f"You can now revert your original Steam name.",
                 ephemeral=True
             )
@@ -151,52 +197,3 @@ class VerifySteamView(disnake.ui.View):
     async def on_timeout(self):
         for child in self.children:
             child.disabled = True
-
-TIER_MAP = {
-    1: "Herald",
-    2: "Guardian",
-    3: "Crusader",
-    4: "Archon",
-    5: "Legend",
-    6: "Ancient",
-    7: "Divine",
-    8: "Immortal"
-}
-
-def format_rank_tier(tier: int | None) -> str:
-    if not tier:
-        return "Uncalibrated"
-    if tier >= 80:
-        return "Immortal 🏆"
-    division = tier // 10
-    stars = tier % 10
-    name = TIER_MAP.get(division, "Unknown")
-    return f"{name} [{stars}★]"
-
-class ProfileLinksView(disnake.ui.View):
-    def __init__(self, account_id: int):
-        super().__init__(timeout=None)
-        self.add_item(
-            disnake.ui.Button(
-                label="Dotabuff",
-                url=f"https://www.dotabuff.com/players/{account_id}",
-                style=disnake.ButtonStyle.link,
-                emoji="📈"
-            )
-        )
-        self.add_item(
-            disnake.ui.Button(
-                label="OpenDota",
-                url=f"https://www.opendota.com/players/{account_id}",
-                style=disnake.ButtonStyle.link,
-                emoji="📊"
-            )
-        )
-        self.add_item(
-            disnake.ui.Button(
-                label="Stratz",
-                url=f"https://stratz.com/players/{account_id}",
-                style=disnake.ButtonStyle.link,
-                emoji="⚡"
-            )
-        )

@@ -1,86 +1,98 @@
-import os
-import io
+import asyncio
 import disnake
-from PIL import Image
-from utils.config import VOICE_CATEGORY_ID, RANG_DIR
 
-async def get_or_create_voice_channel(guild: disnake.Guild, base_name: str) -> disnake.VoiceChannel:
-    category = guild.get_channel(VOICE_CATEGORY_ID)
-    channels_pool = category.voice_channels if category else guild.voice_channels
-    existing_channels = [
-        vc for vc in channels_pool 
-        if vc.name.lower().startswith(base_name.lower())
-    ]
+class LobbyView(disnake.ui.View):
+    def __init__(self, leader: disnake.Member, game: str, mode: str, max_slots: int, target_mmr: str, position: str):
+        super().__init__(timeout=600)  # Лобі живе 10 хвилин
+        self.leader = leader
+        self.game = game
+        self.mode = mode
+        self.max_slots = max_slots
+        self.target_mmr = target_mmr
+        self.position = position
+        
+        self.members: list[disnake.Member] = [leader]
+        self.temp_voice_channel: disnake.VoiceChannel | None = None
 
-    for vc in existing_channels:
-        if len(vc.members) < (vc.user_limit or 5):
-            return vc
+    def build_embed(self) -> disnake.Embed:
+        member_list = "\n".join([f"• {m.mention} ({m.display_name})" for m in self.members])
+        empty_slots = self.max_slots - len(self.members)
+        if empty_slots > 0:
+            member_list += f"\n*+ {empty_slots} slot(s) remaining...*"
 
-    channel_number = len(existing_channels) + 1
-    new_channel_name = f"{base_name} {channel_number}"
+        embed = disnake.Embed(
+            title=f"🎮 Party Finder — {self.game.upper()}",
+            description=(
+                f"**Leader:** {self.leader.mention}\n"
+                f"**Game Mode:** `{self.mode}`\n"
+                f"**Target MMR/Rank:** `{self.target_mmr}`\n"
+                f"**Required Position/Role:** `{self.position}`\n\n"
+                f"👥 **Party Members ({len(self.members)}/{self.max_slots}):**\n"
+                f"{member_list}"
+            ),
+            color=disnake.Color.blurple()
+        )
+        embed.set_thumbnail(url=self.leader.display_avatar.url)
+        embed.set_footer(text="Click 'Join Party' below to hop in! • Expires in 10 minutes")
+        return embed
 
-    return await guild.create_voice_channel(
-        name=new_channel_name,
-        category=category,
-        user_limit=5
-    )
+    @disnake.ui.button(label="Join Party", style=disnake.ButtonStyle.success, emoji="➕")
+    async def join_btn(self, button: disnake.ui.Button, inter: disnake.MessageInteraction):
+        if inter.author.id in [m.id for m in self.members]:
+            await inter.response.send_message("⚠️ You are already in this party!", ephemeral=True)
+            return
 
-def get_rank_info(mmr: int):
-    if mmr >= 6000:
-        return "Immortal", "Titan.png"
+        if len(self.members) >= self.max_slots:
+            await inter.response.send_message("❌ This party is already full!", ephemeral=True)
+            return
 
-    brackets = [
-        ("Herald", 1, [0, 150, 300, 460, 610]),
-        ("Guardian", 2, [770, 920, 1080, 1230, 1400]),
-        ("Crusader", 3, [1540, 1700, 1850, 2000, 2150]),
-        ("Archon", 4, [2310, 2450, 2610, 2770, 2930]),
-        ("Legend", 5, [3080, 3230, 3390, 3540, 3700]),
-        ("Ancient", 6, [3850, 4000, 4150, 4300, 4460]),
-        ("Divine", 7, [4620, 4820, 5020, 5220, 5420]),
-    ]
+        self.members.append(inter.author)
+        await inter.response.edit_message(embed=self.build_embed(), view=self)
 
-    chosen_name = "Herald"
-    chosen_rank_id = 1
-    chosen_stars = 1
+        # Коли паті повне — створюємо тимчасовий войс
+        if len(self.members) == self.max_slots:
+            await self._create_temporary_voice(inter.guild)
 
-    for title, rank_id, stars_mmr in brackets:
-        if mmr >= stars_mmr[0]:
-            chosen_name = title
-            chosen_rank_id = rank_id
-            chosen_stars = 1
-            for star_idx, threshold in enumerate(stars_mmr, start=1):
-                if mmr >= threshold:
-                    chosen_stars = star_idx
+    @disnake.ui.button(label="Leave", style=disnake.ButtonStyle.secondary, emoji="➖")
+    async def leave_btn(self, button: disnake.ui.Button, inter: disnake.MessageInteraction):
+        if inter.author.id == self.leader.id:
+            await inter.response.send_message("❌ The leader cannot leave! Use 'Disband' instead.", ephemeral=True)
+            return
 
-    file_name = f"Rank{chosen_rank_id} ({chosen_stars}).png"
-    display_title = f"{chosen_name} [{chosen_stars}★]"
-    return display_title, file_name
+        if inter.author.id not in [m.id for m in self.members]:
+            await inter.response.send_message("⚠️ You are not in this party!", ephemeral=True)
+            return
 
-async def create_avatar_with_rank(avatar_asset: disnake.Asset, rank_filename: str) -> io.BytesIO:
-    png_avatar = avatar_asset.replace(format="png", size=256)
-    avatar_bytes = await png_avatar.read()
-    
-    avatar_img = Image.open(io.BytesIO(avatar_bytes)).convert("RGBA")
-    base_size = (256, 256)
-    if avatar_img.size != base_size:
-        avatar_img = avatar_img.resize(base_size, Image.Resampling.LANCZOS)
+        self.members = [m for m in self.members if m.id != inter.author.id]
+        await inter.response.edit_message(embed=self.build_embed(), view=self)
 
-    rank_path = os.path.join(RANG_DIR, rank_filename)
-    if os.path.exists(rank_path):
-        rank_img = Image.open(rank_path).convert("RGBA")
+    @disnake.ui.button(label="Disband", style=disnake.ButtonStyle.danger, emoji="🗑️")
+    async def disband_btn(self, button: disnake.ui.Button, inter: disnake.MessageInteraction):
+        if inter.author.id != self.leader.id and not inter.author.guild_permissions.administrator:
+            await inter.response.send_message("❌ Only the party leader can disband this party!", ephemeral=True)
+            return
 
-        rank_w = int(base_size[0] * 0.45)
-        w_percent = rank_w / float(rank_img.size[0])
-        rank_h = int(float(rank_img.size[1]) * float(w_percent))
-        rank_img = rank_img.resize((rank_w, rank_h), Image.Resampling.LANCZOS)
+        self.stop()
+        for child in self.children:
+            child.disabled = True
 
-        pos_x = base_size[0] - rank_w
-        pos_y = 0
-        avatar_img.paste(rank_img, (pos_x, pos_y), mask=rank_img)
-    else:
-        print(f"[WARNING] Файл рангу не знайдено: {os.path.abspath(rank_path)}")
+        embed = disnake.Embed(
+            title="🚫 Party Disbanded",
+            description=f"The party was closed by {inter.author.mention}.",
+            color=disnake.Color.dark_gray()
+        )
+        await inter.response.edit_message(embed=embed, view=self)
 
-    out_buffer = io.BytesIO()
-    avatar_img.save(out_buffer, format="PNG")
-    out_buffer.seek(0)
-    return out_buffer
+    async def _create_temporary_voice(self, guild: disnake.Guild):
+        category = self.leader.voice.channel.category if (self.leader.voice and self.leader.voice.channel) else None
+        channel_name = f"🔊 Party: {self.game.title()}"
+        
+        try:
+            self.temp_voice_channel = await guild.create_voice_channel(
+                name=channel_name,
+                category=category,
+                user_limit=self.max_slots,
+                reason="Temporary party voice channel"
+            )
+        except disnake.Forbidden:
+            pass
