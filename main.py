@@ -12,7 +12,8 @@ bot = commands.Bot(
     command_prefix="!", 
     intents=disnake.Intents.all(), 
     help_command=None,
-    case_insensitive=True
+    case_insensitive=True,
+    test_guilds=[1543687732105052348]
 )
 
 bot.default_sound_volume = 0.5
@@ -112,7 +113,7 @@ async def help_command(ctx: commands.Context):
     await ctx.send(embed=embed)
 
 EXTENSIONS = [
-    "utils.comands.commands_cog",
+    "utils.commands.commands_cog",
     "utils.event.event_cog",
     "utils.slash_commands.slash_commands_cog"
 ]

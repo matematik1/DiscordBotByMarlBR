@@ -1,6 +1,6 @@
 import json
 import os
-from utils.comands.exp.helpers import check_level_up
+from utils.commands.exp.helpers import check_level_up
 
 DATA_FILE = os.path.join("data", "users.json")
 DATA_EXP_FILE = os.path.join("data", "exp.json")
@@ -143,3 +143,16 @@ def recalculate_all_levels() -> int:
         json.dump(data, f, indent=4, ensure_ascii=False)
 
     return updated_count
+
+def get_all_users_data() -> dict:
+    """Повертає словник з даними всіх користувачів (Dota-акаунти)."""
+    ensure_data_dir()
+    with open(DATA_FILE, "r", encoding="utf-8") as f:
+        data = json.load(f)
+    return data
+
+def get_all_exp_data() -> dict:
+    ensure_data_dir()
+    with open(DATA_EXP_FILE, "r", encoding="utf-8") as f:
+        data = json.load(f)
+    return data

@@ -1,14 +1,15 @@
 import disnake
-from utils.storage import get_all_users_data
+
+from utils.storage import get_all_exp_data
 
 async def handle_top(inter: disnake.ApplicationCommandInteraction):
-    all_users = get_all_users_data()
+    # Використовуємо правильну функцію для отримання бази EXP
+    all_users = get_all_exp_data()
 
     if not all_users:
         await inter.response.send_message("📊 The leaderboard is currently empty.", ephemeral=True)
         return
 
-    # Фільтруємо лише учасників поточного сервера та сортуємо: спочатку рівень, потім досвід
     guild_members_data = []
     for user_id_str, user_info in all_users.items():
         if not user_id_str.isdigit():

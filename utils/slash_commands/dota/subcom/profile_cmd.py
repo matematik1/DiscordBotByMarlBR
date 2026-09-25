@@ -1,22 +1,46 @@
 import aiohttp
 import disnake
+
 from utils.storage import get_user_steam_id
-from ..helpers import format_rank_tier, ProfileLinksView, update_member_dota_role
+from utils.config import STRATZ_API_KEY
+from utils.slash_commands.dota.helpers import format_rank_tier, ProfileLinksView, update_member_dota_role
+
+async def get_stratz_rank(account_id: int) -> int | None:
+    if not STRATZ_API_KEY:
+        return None
+        
+    url = "https://api.stratz.com/graphql"
+    headers = {
+        "Authorization": f"Bearer {STRATZ_API_KEY}",
+        "Content-Type": "application/json"
+    }
+    query = f"query {{ player(steamAccountId: {account_id}) {{ steamAccount {{ seasonRank }} }} }}"
+    
+    async with aiohttp.ClientSession() as session:
+        try:
+            async with session.post(url, json={"query": query}, headers=headers, timeout=3) as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+                    player = data.get("data", {}).get("player")
+                    if player and player.get("steamAccount"):
+                        return player["steamAccount"].get("seasonRank")
+        except Exception:
+            pass
+    return None
 
 async def handle_profile(inter: disnake.ApplicationCommandInteraction, steam_id: int | None):
-    await inter.response.defer()
-
     account_id = steam_id if steam_id else get_user_steam_id(inter.author.id)
+
     if not account_id:
-        await inter.followup.send(
-            "❌ **No linked account found!**\nUse `/dota connect` first, or pass a Steam ID: `/dota profile <steam_id>`",
-            ephemeral=True
-        )
+        await inter.response.send_message("❌ **No linked account found!**\nUse `/dota connect` first, or pass a Steam ID.", ephemeral=True)
         return
+
+    await inter.response.defer()
 
     base_url = f"https://api.opendota.com/api/players/{account_id}"
     headers = {"User-Agent": "Mozilla/5.0"}
 
+    # 1. Получаем базу данных с OpenDota
     async with aiohttp.ClientSession(headers=headers) as session:
         try:
             async with session.get(base_url, timeout=10) as r1, \
@@ -24,7 +48,7 @@ async def handle_profile(inter: disnake.ApplicationCommandInteraction, steam_id:
                        session.get(f"{base_url}/recentMatches", timeout=10) as r3:
 
                 if r1.status != 200:
-                    await inter.followup.send("❌ Failed to fetch player profile. Check if your profile is public.", ephemeral=True)
+                    await inter.edit_original_response(content="❌ Failed to fetch player profile. Check if your profile is public.")
                     return
 
                 player_data = await r1.json()
@@ -32,14 +56,19 @@ async def handle_profile(inter: disnake.ApplicationCommandInteraction, steam_id:
                 recent_matches = await r3.json() if r3.status == 200 else []
         except Exception as e:
             print(f"Error fetching Dota profile: {e}")
-            await inter.followup.send("❌ Error connecting to OpenDota API.", ephemeral=True)
+            await inter.edit_original_response(content="❌ Error connecting to OpenDota API.")
             return
+
+    # 2. Получаем актуальный ранг со Stratz
+    stratz_rank = await get_stratz_rank(account_id)
+    
+    # Если Stratz нашел ранг - берем его. Если нет - берем старый с OpenDota
+    rank_tier = stratz_rank if stratz_rank else player_data.get("rank_tier")
 
     profile_info = player_data.get("profile") or {}
     player_name = profile_info.get("personaname", "Unknown Player")
     avatar_url = profile_info.get("avatarfull")
     loc_country = profile_info.get("loccountrycode") or "🌍"
-    rank_tier = player_data.get("rank_tier")
     rank_str = format_rank_tier(rank_tier)
 
     wins = wl_data.get("win", 0)
@@ -86,4 +115,4 @@ async def handle_profile(inter: disnake.ApplicationCommandInteraction, steam_id:
         await update_member_dota_role(inter.author, rank_tier)
 
     view = ProfileLinksView(account_id)
-    await inter.followup.send(embed=embed, view=view)
+    await inter.edit_original_response(content=None, embed=embed, view=view)

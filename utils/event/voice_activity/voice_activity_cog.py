@@ -1,7 +1,7 @@
 import disnake
 from disnake.ext import commands, tasks
 import time
-from utils.comands.exp.helpers import check_level_up 
+from utils.commands.exp.helpers import check_level_up 
 from utils.storage import add_user_exp, update_user_exp_and_lvl
 import random
 

@@ -1,6 +1,6 @@
 import disnake
 from utils.storage import get_all_users_data
-from utils.comands.dota.helpers import update_member_dota_role
+from utils.commands.dota.helpers import update_member_dota_role
 
 async def sync_all_guild_dota_roles(guild: disnake.Guild) -> tuple[int, int]:
     """
