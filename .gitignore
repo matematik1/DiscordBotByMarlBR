@@ -1,0 +1,9 @@
+txt.jpg
+
+bk/
+
+venv/
+
+.env
+
+__pycache__/
