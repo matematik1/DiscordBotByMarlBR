@@ -5,6 +5,7 @@ from utils.commands.adm.subcom.bot_cmd import handle_restart, handle_close
 from utils.commands.adm.subcom.exp_cmd import handle_give_exp, handle_set_lvl
 from utils.commands.adm.subcom.sync_cmd import handle_sync_roles
 from utils.commands.sound.subcom.admin_mixer_cmd import handle_admin_mixer
+from utils.commands.adm.subcom.clear_cmd import handle_clear
 # Змінили імпорт: прибрали EXP_ROLE і додали recalculate_all_levels
 from utils.storage import recalculate_all_levels
 
@@ -41,6 +42,13 @@ class AdmCog(commands.Cog):
         if act in ("sound", "s", "mixer"):
             await handle_admin_mixer(ctx, self.bot)
             return
+
+        if act in ("clear", "c"):
+                    amount = 10
+                    if args and args[0].isdigit():
+                        amount = int(args[0])
+                    await handle_clear(ctx, amount)
+                    return
 
         # 3. Перезавантаження бота: !adm restart
         if act in ("restart", "res"):

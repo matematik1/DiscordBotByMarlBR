@@ -67,8 +67,8 @@ def generate_inventory_image(boot_num: int, item_nums: list[int]) -> io.BytesIO:
     return buffer
 
 TIER_MAP = {
-    1: "Recryt", 2: "Guardian", 3: "Crusader", 4: "Archon",
-    5: "Legend", 6: "Ancient", 7: "Divine", 8: "Immortal"
+    1: "𝗥𝗘𝗖𝗥𝗨𝗧", 2: "𝗦𝗘𝗡𝗧𝗥𝗬", 3: "𝗚𝗨𝗔𝗥𝗗𝗜𝗔𝗡", 4: "𝗔𝗥𝗖𝗛𝗢𝗡",
+    5: "𝗟𝗘𝗚𝗘𝗡𝗗", 6: "𝗔𝗡𝗖𝗜𝗘𝗡𝗧", 7: "𝗗𝗜𝗩𝗜𝗡𝗘", 8: "𝗜𝗠𝗠𝗢𝗥𝗧𝗔𝗟"
 }
 
 def format_rank_tier(tier: int | None) -> str:

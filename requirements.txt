@@ -1,0 +1,8 @@
+disnake[voice]
+python-dotenv
+aiohttp
+Pillow
+tzdata
+yt-dlp
+
+# FFmpeg must also be installed separately and available on PATH for voice playback.

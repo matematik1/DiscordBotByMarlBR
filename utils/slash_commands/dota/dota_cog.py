@@ -5,6 +5,7 @@ from .subcom.profile_cmd import handle_profile
 from .subcom.connect_cmd import handle_connect
 from .subcom.roll_cmd import handle_roll
 from .subcom.random_cmd import handle_random
+from .subcom.hero_cmd import handle_hero
 
 class DotaSlashCog(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -42,3 +43,7 @@ class DotaSlashCog(commands.Cog):
     @dota.sub_command(name="random", description="Generate random hero & inventory build")
     async def random(self, inter: disnake.ApplicationCommandInteraction):
         await handle_random(inter)
+
+    @dota.sub_command(name="hero", description="Generate random hero")
+    async def hero(self, inter: disnake.ApplicationCommandInteraction):
+        await handle_hero(inter)

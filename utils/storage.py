@@ -1,9 +1,10 @@
 import json
 import os
-from utils.commands.exp.helpers import check_level_up
+from utils.event.exp_sustem.helpers import check_level_up
 
 DATA_FILE = os.path.join("data", "users.json")
 DATA_EXP_FILE = os.path.join("data", "exp.json")
+DATA_MONEY_FILE = os.path.join("data", "money.json")
 
 def ensure_data_dir():
     os.makedirs("data", exist_ok=True)
@@ -15,6 +16,11 @@ def ensure_data_dir():
         with open(DATA_EXP_FILE, "w", encoding="utf-8") as f:
             json.dump({}, f)
 
+    if not os.path.exists(DATA_MONEY_FILE):
+        with open(DATA_MONEY_FILE, "w", encoding="utf-8") as f:
+            json.dump({}, f)
+
+#------------------- USERS --------------------
 def get_user_data(discord_id: int) -> dict | None:
     ensure_data_dir()
     with open(DATA_FILE, "r", encoding="utf-8") as f:
@@ -44,6 +50,15 @@ def save_user_steam_id(discord_id: int, discord_name: str, account_id: int, stea
     with open(DATA_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=4, ensure_ascii=False)
 
+def get_all_users_data() -> dict:
+    """Повертає словник з даними всіх користувачів (Dota-акаунти)."""
+    ensure_data_dir()
+    with open(DATA_FILE, "r", encoding="utf-8") as f:
+        data = json.load(f)
+    return data
+#---------------------- USERS END ------------------------------
+
+#---------------------- EXP ------------------------------------
 def add_user_exp(user_id: int, xp_amount: int, username: str = None) -> dict:
     ensure_data_dir()
     
@@ -144,15 +159,80 @@ def recalculate_all_levels() -> int:
 
     return updated_count
 
-def get_all_users_data() -> dict:
-    """Повертає словник з даними всіх користувачів (Dota-акаунти)."""
-    ensure_data_dir()
-    with open(DATA_FILE, "r", encoding="utf-8") as f:
-        data = json.load(f)
-    return data
-
 def get_all_exp_data() -> dict:
     ensure_data_dir()
     with open(DATA_EXP_FILE, "r", encoding="utf-8") as f:
         data = json.load(f)
     return data
+#-------------------------- EXP END ---------------------------
+
+#-------------------------- MONEY -----------------------------
+def change_user_money(user_id: int, money_amount: int, username: str = None) -> dict:
+    """Универсальная функция для изменения баланса пользователя (принимает и + и -)"""
+    ensure_data_dir()
+    
+    with open(DATA_MONEY_FILE, "r", encoding="utf-8") as f:
+        data = json.load(f)
+
+    user_key = str(user_id)
+
+    if user_key not in data:
+        data[user_key] = {
+            "user_id": user_id,
+            "username": username or "Unknown",
+            "money": 0
+        }
+    elif username:
+        data[user_key]["username"] = username
+
+    data[user_key]["money"] += money_amount
+
+    if data[user_key]["money"] < 0:
+        data[user_key]["money"] = 0
+
+    with open(DATA_MONEY_FILE, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=4, ensure_ascii=False)
+
+    return data[user_key]
+
+def add_user_money(user_id: int, money_amount: int, username: str = None) -> dict:
+    return change_user_money(user_id, int(money_amount), username)
+
+
+def remove_user_money(user_id: int, money_amount: int, username: str = None) -> dict:
+    return change_user_money(user_id, -int(money_amount), username)
+
+
+# Backward-compatible aliases for older commands/imports.
+def add_user_monay(user_id: int, money_amount: int, username: str = None) -> dict:
+    return add_user_money(user_id, money_amount, username)
+
+
+def remove_usr_monay(user_id: int, money_amount: int, username: str = None) -> dict:
+    return remove_user_money(user_id, money_amount, username)
+
+def get_user_money(user_id: int) -> dict:
+    ensure_data_dir()
+    with open(DATA_MONEY_FILE, "r", encoding="utf-8") as f:
+        data = json.load(f)
+
+    user_key = str(user_id)
+    return data.get(user_key, {"user_id": user_id, "username": "Unknown", "money": 0})
+
+def get_money_top_users(limit: int = 10) -> list[dict]:
+    ensure_data_dir()
+    with open(DATA_MONEY_FILE, "r", encoding="utf-8") as f:
+        data = json.load(f)
+
+    users = list(data.values())
+
+    users.sort(key=lambda u: (u.get("money", 0)), reverse=True)
+
+    return users[:limit]
+
+def get_all_money_data() -> dict:
+    ensure_data_dir()
+    with open(DATA_MONEY_FILE, "r", encoding="utf-8") as f:
+        data = json.load(f)
+    return data
+#------------------------ MONEY END ------------------------------------

@@ -5,6 +5,7 @@ from .subcom.bot_cmd import handle_restart, handle_close
 from .subcom.exp_cmd import handle_give_exp, handle_set_lvl
 from .subcom.sync_cmd import handle_sync_roles
 from utils.slash_commands.sound.subcom.admin_mixer_cmd import handle_admin_mixer
+from utils.slash_commands.adm.subcom.clear_cmd import handle_clear
 
 class AdmSlashCog(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -58,3 +59,11 @@ class AdmSlashCog(commands.Cog):
     @adm.sub_command(name="sound", description="Open administrative sound mixer (volume, repeat, default save)")
     async def adm_sound(self, inter: disnake.ApplicationCommandInteraction):
         await handle_admin_mixer(inter, self.bot)
+
+    @adm.sub_command(name="clear", description="Clear recent messages in the channel")
+    async def clear(
+        self, 
+        inter: disnake.ApplicationCommandInteraction,
+        amount: int = commands.Param(default=10, description="Number of messages to delete (max 150)")
+    ):
+        await handle_clear(inter, amount)

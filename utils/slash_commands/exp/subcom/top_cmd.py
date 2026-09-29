@@ -1,4 +1,5 @@
 import disnake
+import os
 
 from utils.storage import get_all_exp_data
 
@@ -30,6 +31,8 @@ async def handle_top(inter: disnake.ApplicationCommandInteraction):
 
     top_lines = []
     medals = ["🥇", "🥈", "🥉"]
+    gif_filename = "logo.gif"
+    gif_path = os.path.join("video", gif_filename)
 
     for index, (name, lvl, xp) in enumerate(guild_members_data[:10], start=1):
         rank_icon = medals[index - 1] if index <= 3 else f"`#{index}`"
@@ -42,4 +45,9 @@ async def handle_top(inter: disnake.ApplicationCommandInteraction):
     )
     embed.set_footer(text=f"Top 10 active members • {inter.guild.member_count} total")
 
-    await inter.response.send_message(embed=embed)
+    if os.path.exists(gif_path):
+        file = disnake.File(gif_path, filename=gif_filename)
+        embed.set_thumbnail(url=f"attachment://{gif_filename}")
+        await inter.response.send_message(embed=embed, file=file)
+    else:
+        await inter.response.send_message(embed=embed)

@@ -5,6 +5,7 @@ from .subcom.profile_cmd import handle_profile
 from .subcom.connect_cmd import handle_connect
 from .subcom.roll_cmd import handle_roll
 from .subcom.random_cmd import handle_random
+from .subcom.hero_cmd import handle_hero
 
 class DotaCog(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -20,7 +21,8 @@ class DotaCog(commands.Cog):
                 "• `!d connect <AccountID>` — Link your Steam account\n"
                 "• `!d profile [AccountID]` — View OpenDota stats and recent matches\n"
                 "• `!d roll [min] [max]` — Roll animated dice\n"
-                "• `!d random` — Generate random hero & inventory build"
+                "• `!d random` — Generate random hero & inventory build\n"
+                 "• `!d hero` — Generate random hero"
             ),
             color=disnake.Color.blue()
         )
@@ -45,6 +47,10 @@ class DotaCog(commands.Cog):
     @dota.command(name="random", description="Generate random hero & inventory build", aliases=["r"])
     async def random(self, ctx: commands.Context):
         await handle_random(ctx)
+
+    @dota.command(name="hero", description="Generate random hero", aliases=["signa"])
+    async def hero(self, ctx: commands.Context):
+        await handle_hero(ctx)
 
 def setup(bot):
     bot.add_cog(DotaCog(bot))

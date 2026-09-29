@@ -1,7 +1,7 @@
 import disnake
 
 from utils.storage import get_user_exp
-from utils.commands.exp.helpers import get_exp_for_lvl, create_progress_bar
+from utils.event.exp_sustem.helpers import get_exp_for_lvl, create_progress_bar
 
 async def handle_rank(inter: disnake.ApplicationCommandInteraction, target: disnake.Member | None):
     member = target if target else inter.author

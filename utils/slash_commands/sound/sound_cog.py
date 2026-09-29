@@ -4,39 +4,82 @@ from disnake.ext import commands
 from .subcom.user_sound_cmd import handle_sound_menu, handle_play_named
 from .subcom.stop_cmd import handle_sound_stop
 from .subcom.admin_mixer_cmd import handle_admin_mixer
-from .mixer import get_sound_files
+from .mixer import find_sound_matches
+
 
 class SoundSlashCog(commands.Cog):
+    """Slash sound commands: /sound ..."""
+
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    @commands.slash_command(name="sound", description="Audio soundboard and voice controls")
+    @commands.slash_command(
+        name="sound",
+        description="Soundboard and voice audio controls",
+    )
     async def sound(self, inter: disnake.ApplicationCommandInteraction):
-        pass
+        # Do not respond here. Child commands own the interaction response.
+        return
 
-    @sound.sub_command(name="menu", description="Open interactive soundboard menu")
+    @sound.sub_command(name="help", description="Show soundboard command help")
+    async def help(self, inter: disnake.ApplicationCommandInteraction):
+        embed = disnake.Embed(
+            title="🔊 Soundboard Help",
+            description=(
+                "`/sound play <name>` — play directly\n"
+                "`/sound menu` — open mixer\n"
+                "`/sound stop` — stop playback\n"
+                "`/sound help` — show this help"
+            ),
+            color=disnake.Color.teal(),
+        )
+        await inter.response.send_message(embed=embed, ephemeral=True)
+
+    @sound.sub_command(name="menu", description="Open the interactive sound mixer")
     async def menu(self, inter: disnake.ApplicationCommandInteraction):
         await handle_sound_menu(inter, self.bot)
 
-    @sound.sub_command(name="stop", description="Stop sound and disconnect from voice")
+    @sound.sub_command(name="stop", description="Stop playback and leave voice")
     async def stop(self, inter: disnake.ApplicationCommandInteraction):
         await handle_sound_stop(inter)
 
-    @sound.sub_command(name="play", description="Play a specific sound clip directly")
+    @sound.sub_command(
+        name="play",
+        description="Play a sound directly without opening the mixer",
+    )
     async def play(
         self,
         inter: disnake.ApplicationCommandInteraction,
-        name: str = commands.Param(description="Name or keyword of the sound")
+        name: str = commands.Param(
+            description="Sound name, path or keyword",
+            autocomplete=True,
+        ),
     ):
         await handle_play_named(inter, self.bot, name)
 
-    # Автодоповнення для підкоманди /sound play
     @play.autocomplete("name")
-    async def sound_autocomplete(self, inter: disnake.ApplicationCommandInteraction, current: str):
-        files = get_sound_files()
-        suggestions = []
-        for f in files:
-            name_clean = f.rsplit(".", 1)[0]
-            if current.lower() in name_clean.lower():
-                suggestions.append(name_clean)
-        return suggestions[:25]
+    async def sound_autocomplete(
+        self,
+        inter: disnake.ApplicationCommandInteraction,
+        current: str,
+    ):
+        matches = find_sound_matches(current, limit=25)
+
+        return [
+            disnake.OptionChoice(
+                name=(
+                    f"{file_name.rsplit('/', 1)[-1].rsplit('.', 1)[0]}"
+                    if "/" not in file_name
+                    else (
+                        f"{file_name.rsplit('/', 2)[-2]} / "
+                        f"{file_name.rsplit('/', 1)[-1].rsplit('.', 1)[0]}"
+                    )
+                )[:100],
+                value=file_name[:100],
+            )
+            for file_name in matches
+        ]
+
+
+def setup(bot: commands.Bot):
+    bot.add_cog(SoundSlashCog(bot))

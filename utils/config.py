@@ -1,4 +1,7 @@
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 SOUND_DIR = "soundboard"
 HEROES_GIF_DIR = os.path.join("video", "heroes")
@@ -9,9 +12,10 @@ RANG_DIR = os.path.join("img", "rang")
 LFG_CHANNEL_ID = 1552413792795889745
 VOICE_CATEGORY_ID = 1552388769649393774
 AFK_VOICE_ID = 1552406299130728559
-AUTO_ROLE_ID = 1543689985981546587
-STEAM_API_KEY = "YOUR_STEAM_API_KEY"
-STRATZ_API_KEY = "YOUR_STATZ_ZPI_KEY"
+AUTO_ROLE_ID = 1553455511830003842
+SANE_ROLE_ID = 1554108302722334730
+STEAM_API_KEY = os.getenv("STEAM_API_KEY")
+STRATZ_API_KEY = os.getenv("STRATZ_API_KEY")
 
 BASE_XP = 100
 XP_INTERCASE = 100
@@ -103,17 +107,7 @@ SOUND_SUBCOMMANDS = {
     "help": "Displays this menu"
 }
 
-CENSORED_WORDS = [
-    "натурал",
-    "natural",
-    "67",
-    "нітуріл",
-    "скитер",
-    "скітер",
-    "skiter",
-    "sketer",
-    "skeeter"
-]
+
 
 DOTA_RANK_ID = {
     0: 1553011169218793562,

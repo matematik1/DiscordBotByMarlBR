@@ -7,7 +7,8 @@ async def handle_restart(ctx: commands.Context, bot: commands.Bot):
         description="Terminating active processes and restarting the application...",
         color=disnake.Color.orange()
     )
-    await ctx.send(embed=embed, delete_after=5)
+    await ctx.send(embed=embed, delete_after=0)
+    await ctx.message.delete()
     
     # Примусове відключення від голосового каналу
     if ctx.voice_client and ctx.voice_client.is_connected():
@@ -23,7 +24,8 @@ async def handle_close(ctx: commands.Context, bot: commands.Bot):
         description="Disconnecting gateway and terminating bot execution.",
         color=disnake.Color.red()
     )
-    await ctx.send(embed=embed, delete_after=5)
+    await ctx.send(embed=embed, delete_after=0)
+    await ctx.message.delete()
     
     # Примусове відключення від голосового каналу
     if ctx.voice_client and ctx.voice_client.is_connected():

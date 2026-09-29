@@ -2,8 +2,12 @@ import os
 import sys
 import subprocess
 import disnake
+from dotenv import load_dotenv
 from disnake.ext import commands
 from utils.config import SUBCOMMANDS, AUTO_ROLE_ID
+
+load_dotenv()
+BOT_TOKEN = os.getenv("BOT_TOKEN")
 
 intents = disnake.Intents.default()
 intents.message_content = True
@@ -16,7 +20,6 @@ bot = commands.Bot(
     test_guilds=[1543687732105052348]
 )
 
-bot.default_sound_volume = 0.5
 bot.is_restarting = False
 
 @bot.event
@@ -45,7 +48,6 @@ async def help_command(ctx: commands.Context):
             "• `!d help` — Open detailed Dota 2 command menu (alias: `!d h`)\n"
             "• `!d connect <SteamID>` — Link your Steam account\n"
             "• `!d profile [SteamID]` — Display rank, win rate, and recent games\n"
-            "• `!d inv [SteamID]` — Render active hero inventory build\n"
             "• `!d roll [min-max]` — Roll dice with animation (e.g., `!d roll 100-200`)"
         ),
         inline=False
@@ -55,7 +57,6 @@ async def help_command(ctx: commands.Context):
     embed.add_field(
         name="✨ Experience & Levels",
         value=(
-            "• `!exp_help` — Open leveling guide and XP details (alias: `!eh`)\n"
             "• `!rank [user]` — View your level and XP progress (aliases: `!lvl`, `!level`)\n"
             "• `!top` — Show server experience leaderboard (aliases: `!t`, `!lider`)"
         ),
@@ -67,7 +68,7 @@ async def help_command(ctx: commands.Context):
         name="👥 Party Finder (`!play` / `!p`)",
         value=(
             "• `!play help` — View party lobby controls and instructions\n"
-            "• `!play` — Open interactive party search lobby with reaction buttons"
+            "• `!play q` — Open interactive party search lobby with reaction buttons"
         ),
         inline=False
     )
@@ -87,7 +88,6 @@ async def help_command(ctx: commands.Context):
         value=(
             "• `!sound help` — Show soundpad commands and audio usage\n"
             "• `!sound <name/id>` — Play sound effect or track in your voice channel\n"
-            "• `!sound list` — View available audio clips (alias: `!s l`)\n"
             "• `!sound stop` — Stop sound playback and leave voice"
         ),
         inline=False
@@ -122,17 +122,8 @@ for ext in EXTENSIONS:
     bot.load_extension(ext)
 
 if __name__ == "__main__":
-    TOKEN_FILE = "txt.jpg"
-
-    if os.path.exists(TOKEN_FILE):
-        with open(TOKEN_FILE, "r", encoding="utf-8") as f:
-            bot_token = f.read().strip()
-    else:
-        print(f"Error: Token file '{TOKEN_FILE}' not found!")
-        sys.exit(1)
-
     try:
-        bot.run(bot_token)
+        bot.run(BOT_TOKEN)
     finally:
         if getattr(bot, "is_restarting", False):
             print("Spawning process...")

@@ -1,10 +1,9 @@
+import os
 import disnake
 from disnake.ext import commands
-
 from utils.storage import get_all_exp_data
 
 async def handle_top(ctx: commands.Context):
-    # Використовуємо правильну функцію для отримання бази EXP
     all_users = get_all_exp_data()
 
     if not all_users:
@@ -31,6 +30,8 @@ async def handle_top(ctx: commands.Context):
 
     top_lines = []
     medals = ["🥇", "🥈", "🥉"]
+    gif_filename = "logo.gif"
+    gif_path = os.path.join("video", gif_filename)
 
     for index, (name, lvl, xp) in enumerate(guild_members_data[:10], start=1):
         rank_icon = medals[index - 1] if index <= 3 else f"`#{index}`"
@@ -43,4 +44,9 @@ async def handle_top(ctx: commands.Context):
     )
     embed.set_footer(text=f"Top 10 active members • {ctx.guild.member_count} total")
 
-    await ctx.send(embed=embed)
+    if os.path.exists(gif_path):
+        file = disnake.File(gif_path, filename=gif_filename)
+        embed.set_thumbnail(url=f"attachment://{gif_filename}")
+        await ctx.send(embed=embed, file=file)
+    else:
+        await ctx.send(embed=embed)

@@ -8,11 +8,16 @@ class ExpSlashCog(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
-    @commands.slash_command(name="exp", description="Experience and leveling system")
-    async def exp(self, inter: disnake.ApplicationCommandInteraction):
-        pass
+    @commands.slash_command(name="exp", description="Check your or another member's level and XP progress")
+    async def exp(
+        self,
+        inter: disnake.ApplicationCommandInteraction,
+        user: disnake.Member = commands.Param(default=None, description="Target member (leave empty for yourself)")
+    ):
+        await handle_rank(inter, user)
 
-    @exp.sub_command(name="rank", description="Check your or another member's level and XP progress")
+
+    @commands.slash_command(name="rank", description="Check your or another member's level and XP progress")
     async def rank(
         self,
         inter: disnake.ApplicationCommandInteraction,
@@ -20,6 +25,6 @@ class ExpSlashCog(commands.Cog):
     ):
         await handle_rank(inter, user)
 
-    @exp.sub_command(name="top", description="Display the server experience leaderboard")
+    @commands.slash_command(name="top", description="Display the server experience leaderboard")
     async def top(self, inter: disnake.ApplicationCommandInteraction):
         await handle_top(inter)

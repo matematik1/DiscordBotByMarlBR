@@ -1,8 +1,7 @@
 import disnake
 from disnake.ext import commands
 from utils.storage import add_user_exp, update_user_exp_and_lvl
-from utils.commands.exp.helpers import check_level_up
-from utils.commands.exp.helpers import check_level_up
+from utils.event.exp_sustem.helpers import check_level_up
 
 async def handle_give_exp(ctx: commands.Context, user: disnake.Member, amount: int):
     if amount <= 0:
