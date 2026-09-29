@@ -81,9 +81,6 @@
 \## 🏗️ Project Architecture
 
 
-
-```text
-
 ├── img/                               # Visual assets \& banner graphics
 
 ├── utils/
@@ -123,7 +120,6 @@
 └── README.md
 
 ---
-
 
 
 \## 🚀 Getting Started
