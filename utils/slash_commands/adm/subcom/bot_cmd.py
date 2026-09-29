@@ -25,9 +25,9 @@ async def handle_close(ctx: commands.Context, bot: commands.Bot):
     )
     await ctx.send(embed=embed, delete_after=5)
     
-    # Примусове відключення від голосового каналу
-    if ctx.voice_client and ctx.voice_client.is_connected():
-        await ctx.voice_client.disconnect(force=True)
+    voice_client = inter.guild.voice_client if inter.guild else None
+    if voice_client and voice_client.is_connected():
+        await voice_client.disconnect()
         
     print("Bot close!")
     bot.is_restarting = False

@@ -11,6 +11,7 @@ BOT_TOKEN = os.getenv("BOT_TOKEN")
 
 intents = disnake.Intents.default()
 intents.message_content = True
+intents.members = True
 
 bot = commands.Bot(
     command_prefix="!", 
@@ -115,7 +116,8 @@ async def help_command(ctx: commands.Context):
 EXTENSIONS = [
     "utils.commands.commands_cog",
     "utils.event.event_cog",
-    "utils.slash_commands.slash_commands_cog"
+    "utils.slash_commands.slash_commands_cog",
+    "utils.webhook.webhook_cog"
 ]
 
 for ext in EXTENSIONS:

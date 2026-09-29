@@ -1,6 +1,6 @@
 from .words.censored_words import CENSORED_WORDS
 from .words.troll_words import TROLL_WORDS
-from utils.config import SANE_ROLE_ID
+from utils.config import SANE_ROLE_ID, TROLL_ROLE_ID
 import disnake
 from disnake.ext import commands
 import random
@@ -67,6 +67,12 @@ class CensoredWords(commands.Cog):
             if normalized_content == trigger.lower():
 
                 try:
+                    if any(role.id != TROLL_ROLE_ID for role in message.author.roles):
+                        try:
+                            await message.author.add_roles(TROLL_ROLE_ID)
+                        except Exception as e:
+                            print(f"Error in given troll role: {e}")
+
                     response = random.choice(responses)
 
                     await message.channel.send(

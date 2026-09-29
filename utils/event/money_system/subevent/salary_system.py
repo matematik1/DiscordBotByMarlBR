@@ -6,6 +6,7 @@ from pathlib import Path
 import disnake
 from disnake.ext import commands, tasks
 
+from utils.config import TROLL_ROLE_ID
 from utils.event.money_system.helpers import SALARY_CONFIG
 from utils.storage import add_user_money
 
@@ -57,7 +58,7 @@ class SalarySystem(commands.Cog):
         if self.salary_check_loop.is_running():
             self.salary_check_loop.cancel()
 
-    @tasks.loop(seconds=20)
+    @tasks.loop(seconds=30)
     async def salary_check_loop(self):
         now = datetime.now(ZoneInfo("Europe/Kyiv"))
         minute_key = now.strftime("%Y-%m-%d %H:%M")
@@ -80,6 +81,8 @@ class SalarySystem(commands.Cog):
             for guild in self.bot.guilds:
                 for member in guild.members:
                     if member.bot:
+                        continue
+                    if any(role.id == TROLL_ROLE_ID for role in member.roles):
                         continue
                     if any(role.id == role_id for role in member.roles):
                         members_by_id.setdefault(member.id, member)
