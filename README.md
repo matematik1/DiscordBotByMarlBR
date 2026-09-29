@@ -4,7 +4,7 @@
 
 <p align="center">
 
-&#x20; <img src="img/CONNECTED\_PANEL\_IMG\_EU.png" alt="MarlBR Banner" width="650"/>
+&#x20; <img src="img/CONNECTED_PANEL_IMG_EU.png" alt="MarlBR Banner" width="650"/>
 
 </p>
 
