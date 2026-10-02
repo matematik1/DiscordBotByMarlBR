@@ -5,6 +5,7 @@ from .censored_words.cen_word_cog import CensoredWords
 from .exp_sustem.exp_sustem_cog import ExpSystem
 from .money_system.money_system_cog import MoneySystem
 from .money_system.subevent.salary_system import SalarySystem
+from .dle.dle_cog import DLEEventCog
 
 
 def setup(bot: commands.Bot):
@@ -13,3 +14,4 @@ def setup(bot: commands.Bot):
     bot.add_cog(ExpSystem(bot))
     bot.add_cog(MoneySystem(bot))
     bot.add_cog(SalarySystem(bot))
+    bot.add_cog(DLEEventCog(bot))

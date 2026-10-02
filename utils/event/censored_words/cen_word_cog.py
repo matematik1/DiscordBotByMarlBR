@@ -67,7 +67,7 @@ class CensoredWords(commands.Cog):
             if normalized_content == trigger.lower():
 
                 try:
-                    if any(role.id != TROLL_ROLE_ID for role in message.author.roles):
+                    if any(role.id == int(TROLL_ROLE_ID) for role in message.author.roles):
                         try:
                             await message.author.add_roles(TROLL_ROLE_ID)
                         except Exception as e:

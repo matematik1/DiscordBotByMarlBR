@@ -7,6 +7,7 @@ from .duel.duel_cog import DuelCog
 from .exp.exp_cog import ExpCog
 from .play.play_cog import PlayCog
 from .sound.sound_cog import SoundCog
+from .dle.dle_cog import DLECog
 
 def setup(bot: commands.Bot):
     bot.add_cog(AdmCog(bot))
@@ -15,3 +16,4 @@ def setup(bot: commands.Bot):
     bot.add_cog(ExpCog(bot))
     bot.add_cog(PlayCog(bot))
     bot.add_cog(SoundCog(bot))
+    bot.add_cog(DLECog(bot))
