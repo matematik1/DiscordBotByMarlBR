@@ -4,7 +4,7 @@ import subprocess
 import disnake
 from dotenv import load_dotenv
 from disnake.ext import commands
-from utils.config import SUBCOMMANDS, AUTO_ROLE_ID
+from utils.config import SUBCOMMANDS, AUTO_ROLE_ID, SECOND_BOT_ID, VERIFICATION_ROLE_ID
 
 load_dotenv()
 BOT_TOKEN = os.getenv("BOT_TOKEN")
@@ -12,6 +12,7 @@ BOT_TOKEN = os.getenv("BOT_TOKEN")
 intents = disnake.Intents.default()
 intents.message_content = True
 intents.members = True
+intents.presences = True
 
 bot = commands.Bot(
     command_prefix="!", 
@@ -29,10 +30,27 @@ async def on_ready():
 
 @bot.event
 async def on_member_join(member: disnake.Member):
-    role = member.guild.get_role(AUTO_ROLE_ID)
-    if role is not None:
-        await member.add_roles(role)
-        print(f'Given role {role.name} to {member.name}')
+
+    guild = member.guild
+    second_bot = guild.get_member(SECOND_BOT_ID)
+
+    if not second_bot:
+        try:
+            second_bot = await guild.fetch_member(SECOND_BOT_ID)
+        except disnake.NotFound:
+            print(f"SECOND_BOT NONE IN SERVER id:{SECOND_BOT_ID} !")
+            return
+
+    if second_bot.status != disnake.Status.offline:
+        role = guild.get_role(AUTO_ROLE_ID)
+        if role is not None:
+            await member.add_roles(role)
+            print(f'Given AUTO_ROLE {role.name} to {member.name}')
+    else:
+        role = guild.get_role(VERIFICATION_ROLE_ID)
+        if role is not None:
+            await member.add_roles(role)
+            print(f'Given VERIFICATION_ROLE {role.name} to {member.name}')
 
 @bot.command(name="help", aliases=["h"])
 async def help_command(ctx: commands.Context):
