@@ -135,7 +135,8 @@ EXTENSIONS = [
     "utils.commands.commands_cog",
     "utils.event.event_cog",
     "utils.slash_commands.slash_commands_cog",
-    "utils.webhook.webhook_cog"
+    "utils.webhook.webhook_cog",
+    "utils.event.voice_activity.voice_activity_msg.voice_msg_cog"
 ]
 
 for ext in EXTENSIONS:
