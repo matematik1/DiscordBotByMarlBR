@@ -6,6 +6,7 @@ from .exp_sustem.exp_sustem_cog import ExpSystem
 from .money_system.money_system_cog import MoneySystem
 from .money_system.subevent.salary_system import SalarySystem
 from .dle.dle_cog import DLEEventCog
+from .steam_ver.steam import CheckRank
 
 
 def setup(bot: commands.Bot):
@@ -15,3 +16,4 @@ def setup(bot: commands.Bot):
     bot.add_cog(MoneySystem(bot))
     bot.add_cog(SalarySystem(bot))
     bot.add_cog(DLEEventCog(bot))
+    bot.add_cog(CheckRank(bot))
